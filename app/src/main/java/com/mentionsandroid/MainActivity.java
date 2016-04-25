@@ -22,7 +22,7 @@ public class MainActivity extends AppCompatActivity implements MentionDelegate {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mentionController = new MentionController(MainActivity.this, R.id.listView, R.id.edtText, android.R.layout.simple_list_item_1);
+        mentionController = new MentionController(MainActivity.this, R.id.listView, R.id.edtText, android.R.id.text1, android.R.layout.simple_list_item_1);
     }
 
     @Override

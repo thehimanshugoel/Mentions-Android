@@ -21,11 +21,11 @@ public class MentionController implements MentionTokenizer.ChangeHandler {
     private final MentionTokenizer tokenizer;
     private final MentionAdaptor adapter;
 
-    public MentionController(final MentionDelegate delegate, int listViewRid, int editTextRid, int listItemLayoutId) {
+    public MentionController(final MentionDelegate delegate, int listViewRid, int editTextRid, int textViewRid, int listItemLayoutId) {
         this.delegate = delegate;
-        adapter = new MentionAdaptor(delegate.getContext(), listItemLayoutId, editTextRid, new ArrayList<MentionSuggestible>(Arrays.asList(new MentionSuggestible[]{})));
         editText = (EditText) delegate.getActivity().findViewById(editTextRid);
         listView = (ListView) delegate.getActivity().findViewById(listViewRid);
+        adapter = new MentionAdaptor(delegate.getContext(), listItemLayoutId, textViewRid, new ArrayList<MentionSuggestible>(Arrays.asList(new MentionSuggestible[]{})));
         listView.setAdapter(adapter);
         listView.setVisibility(View.GONE);
         listView.setOnItemClickListener(adapter);
