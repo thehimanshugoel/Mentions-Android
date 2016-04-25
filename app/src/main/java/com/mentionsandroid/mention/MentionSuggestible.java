@@ -5,5 +5,5 @@ package com.mentionsandroid.mention;
  */
 public interface MentionSuggestible {
 
-    public String getText();
+    String getText();
 }

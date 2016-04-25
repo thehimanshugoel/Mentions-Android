@@ -1,11 +1,7 @@
 package com.mentionsandroid.mention;
 
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
 
@@ -16,7 +12,7 @@ import java.util.List;
 /**
  * Created by ningsuhen on 4/24/16.
  */
-public class MentionController{
+public class MentionController {
     private final MentionDelegate delegate;
     private final EditText editText;
     private final ListView listView;
@@ -41,7 +37,6 @@ public class MentionController{
                 final MentionTokenizer.MentionToken suggestion = tokenizer.currentSuggestion;
                 if (suggestion == null) {
                     adapter.clear();
-                    adapter.notifyDataSetChanged();
                     listView.setVisibility(View.GONE);
                     return;
                 }
@@ -54,7 +49,15 @@ public class MentionController{
                             @Override
                             public void onSuggestionSelected(MentionSuggestible suggestible) {
                                 suggestion.convertToMention(suggestible);
+                                tokenizer.disable();
                                 editText.setText(tokenizer.render());
+                                tokenizer.enable();
+                                Log.d("editText", tokenizer.render() + " " + tokenizer.render().length() + " " + editText.length() + " " + suggestion.endIndex);
+                                editText.setSelection(suggestion.endIndex);
+                                tokenizer.currentSuggestion = null;
+                                adapter.clear();
+                                listView.setVisibility(View.GONE);
+
                             }
                         };
                         listView.setVisibility(View.VISIBLE);

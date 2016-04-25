@@ -11,10 +11,10 @@ import java.util.List;
  */
 public class MentionTokenizer implements TextWatcher {
 
-    MentionToken root = new MentionToken("", 0);
+    MentionToken root;
     public MentionToken currentSuggestion;
     private List<ChangeHandler> onChangeListeners = new ArrayList<>();
-
+    private boolean disabled = false;
 
     @Override
     public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -23,6 +23,9 @@ public class MentionTokenizer implements TextWatcher {
 
     @Override
     public void onTextChanged(CharSequence s, int start, int before, int count) {
+        if (disabled) {
+            return;
+        }
         int startIndex = start;
         int endIndex = start + before;
         int newEndIndex = startIndex + count;
@@ -44,13 +47,26 @@ public class MentionTokenizer implements TextWatcher {
 
     private MentionToken findFirstToken(int curIndex, CharSequence s) {
         MentionToken current = root;
+        MentionToken last = root;
         while (current != null) {
-            if (current.startIndex <= curIndex && current.endIndex >= curIndex) {
+            if (current.startIndex <= curIndex && current.endIndex > curIndex) {
                 return current;
             }
             current = current.next;
+            if (current != null) {
+                last = current;
+            }
         }
-        return new MentionToken(s.subSequence(curIndex, s.length()), curIndex);
+        if(last != null && last.type != TokenType.MENTION){
+            return last;
+        }
+        MentionToken newToken = new MentionToken(s.subSequence(curIndex, s.length()), curIndex);
+        if (last != null) {
+            last.next = newToken;
+        } else {
+            root = newToken;
+        }
+        return newToken;
     }
 
     public void addOnChangeListener(ChangeHandler changeHandler) {
@@ -67,6 +83,14 @@ public class MentionTokenizer implements TextWatcher {
         return builder.toString();
     }
 
+    public void disable() {
+        disabled = true;
+    }
+
+    public void enable() {
+        disabled = false;
+    }
+
     enum TokenType {
         NORMAL,
         SUGGESTION,
@@ -78,7 +102,7 @@ public class MentionTokenizer implements TextWatcher {
         public CharSequence text = "";
         public MentionToken next;
         private int startIndex;
-        private int endIndex;
+        public int endIndex;
         private MentionSuggestible suggestible;
 
         public MentionToken(CharSequence s, int startIndex) {
@@ -90,14 +114,14 @@ public class MentionTokenizer implements TextWatcher {
             if (next == null) {
                 return;
             }
-            next.startIndex = this.endIndex + 1;
+            next.startIndex = this.endIndex;
             next.endIndex = next.startIndex + next.text.length();
             next.updateNext();
         }
 
         public void removeTokensTill(int endIndex) {
             MentionToken current = this.next;
-            while (current != null && current.startIndex <= endIndex) {
+            while (current != null && current.startIndex < endIndex) {
                 //remove current
                 this.next = current.next;
                 current = current.next;
@@ -126,7 +150,7 @@ public class MentionTokenizer implements TextWatcher {
                         if (subTokens.length > 1) {
                             //create new token of type suggestion
                             String query = "@" + subTokens[1];
-                            MentionToken token = new MentionToken(query, this.endIndex + 1);
+                            MentionToken token = new MentionToken(query, this.endIndex);
                             token.type = TokenType.SUGGESTION;
                             token.next = this.next;
                             this.next = token;
@@ -156,14 +180,14 @@ public class MentionTokenizer implements TextWatcher {
                         //Split SUGGESTION into NORMAL & SUGGESTION
 
                         //change text of self
-                        String[] subTokens = newString.split("@");
+                        String[] subTokens = newString.split("(?=@)");
                         this.type = TokenType.NORMAL;
                         this.text = subTokens[0];
                         this.endIndex = this.startIndex + this.text.length();
                         if (subTokens.length > 1) {
                             //create new token of type suggestion
                             String query = "@" + subTokens[1];
-                            MentionToken token = new MentionToken(query, this.endIndex + 1);
+                            MentionToken token = new MentionToken(query, this.endIndex);
                             token.type = TokenType.SUGGESTION;
                             token.next = this.next;
                             this.next = token;
@@ -194,8 +218,9 @@ public class MentionTokenizer implements TextWatcher {
         }
 
         public void convertToMention(MentionSuggestible suggestible) {
+            this.type = TokenType.MENTION;
             this.suggestible = suggestible;
-            this.text = suggestible.getText();
+            this.text = "@" + suggestible.getText();
             this.endIndex = this.startIndex + this.text.length();
             this.updateNext();
         }
