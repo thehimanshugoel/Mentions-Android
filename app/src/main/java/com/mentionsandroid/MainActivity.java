@@ -1,5 +1,6 @@
 package com.mentionsandroid;
 
+import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -21,13 +22,16 @@ public class MainActivity extends AppCompatActivity implements MentionDelegate {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        EditText editText = (EditText) findViewById(R.id.edtText);
-        ListView listView = (ListView) findViewById(R.id.listView);
-        mentionController = new MentionController(MainActivity.this, editText, listView);
+        mentionController = new MentionController(MainActivity.this, R.id.listView, R.id.edtText, android.R.layout.simple_list_item_1);
     }
 
     @Override
     public Context getContext() {
+        return this;
+    }
+
+    @Override
+    public Activity getActivity() {
         return this;
     }
 

@@ -2,6 +2,7 @@ package com.mentionsandroid.mention;
 
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +35,7 @@ public class MentionTokenizer implements TextWatcher {
         CharSequence newValue = s.subSequence(token.startIndex, newEndIndex);
         token.updateText(newValue);
         for (ChangeHandler changeHandler : onChangeListeners) {
-            changeHandler.changed();
+            changeHandler.tokensChanged();
         }
     }
 
@@ -57,7 +58,7 @@ public class MentionTokenizer implements TextWatcher {
                 last = current;
             }
         }
-        if(last != null && last.type != TokenType.MENTION){
+        if (last != null && last.type != TokenType.MENTION) {
             return last;
         }
         MentionToken newToken = new MentionToken(s.subSequence(curIndex, s.length()), curIndex);
@@ -98,12 +99,12 @@ public class MentionTokenizer implements TextWatcher {
     }
 
     class MentionToken {
-        private TokenType type = TokenType.NORMAL;
+         TokenType type = TokenType.NORMAL;
         public CharSequence text = "";
         public MentionToken next;
         private int startIndex;
         public int endIndex;
-        private MentionSuggestible suggestible;
+        MentionSuggestible suggestible;
 
         public MentionToken(CharSequence s, int startIndex) {
             this.startIndex = startIndex;
@@ -115,7 +116,7 @@ public class MentionTokenizer implements TextWatcher {
                 return;
             }
             next.startIndex = this.endIndex;
-            next.endIndex = next.startIndex + next.text.length();
+            next.updateEndIndex();
             next.updateNext();
         }
 
@@ -129,104 +130,97 @@ public class MentionTokenizer implements TextWatcher {
         }
 
         public void updateText(CharSequence newValue) {
+
             String newString = newValue.toString();
-            int atIndex = newString.indexOf("@");
-            if (type == TokenType.NORMAL) {
-                if (atIndex > -1) {
-                    if (atIndex == 0) {
-                        //CONVERT NORMAL TO SUGGESTION
-                        this.type = TokenType.SUGGESTION;
-                        this.text = newValue;
-                        this.endIndex = this.startIndex + this.text.length();
-                        this.updateNext();
-                        MentionTokenizer.this.currentSuggestion = this;
-                    } else {
-                        //Split NORMAL into NORMAL & SUGGESTION
-
-                        //change text of self
-                        String[] subTokens = newString.split("@");
-                        this.text = subTokens[0];
-                        this.endIndex = this.startIndex + this.text.length();
-                        if (subTokens.length > 1) {
-                            //create new token of type suggestion
-                            String query = "@" + subTokens[1];
-                            MentionToken token = new MentionToken(query, this.endIndex);
-                            token.type = TokenType.SUGGESTION;
-                            token.next = this.next;
-                            this.next = token;
-                            this.updateNext();
-                            MentionTokenizer.this.currentSuggestion = token;
-                        } else {
-                            this.updateNext();
-                        }
-
-                    }
-                } else {
-                    // JUST UPDATE NORMAL TEXT
-                    this.text = newValue;
-                    this.endIndex = this.startIndex + this.text.length();
-                    this.updateNext();
-                }
-            } else if (type == TokenType.SUGGESTION) {
-
-                if (atIndex > -1) {
-                    if (atIndex == 0) {
-                        // JUST UPDATE SUGGESTION QUERY
-                        this.text = newValue;
-                        this.endIndex = this.startIndex + this.text.length();
-                        this.updateNext();
-                        MentionTokenizer.this.currentSuggestion = this;
-                    } else {
-                        //Split SUGGESTION into NORMAL & SUGGESTION
-
-                        //change text of self
-                        String[] subTokens = newString.split("(?=@)");
-                        this.type = TokenType.NORMAL;
-                        this.text = subTokens[0];
-                        this.endIndex = this.startIndex + this.text.length();
-                        if (subTokens.length > 1) {
-                            //create new token of type suggestion
-                            String query = "@" + subTokens[1];
-                            MentionToken token = new MentionToken(query, this.endIndex);
-                            token.type = TokenType.SUGGESTION;
-                            token.next = this.next;
-                            this.next = token;
-                            this.updateNext();
-                            MentionTokenizer.this.currentSuggestion = token;
-                        } else {
-                            this.updateNext();
-                        }
-                    }
-
-                } else {
-                    //CONVERT SUGGESTION TO NORMAL
-                    this.type = TokenType.NORMAL;
-                    this.text = newValue;
-                    this.endIndex = this.startIndex + this.text.length();
-                    this.updateNext();
-                    MentionTokenizer.this.currentSuggestion = null;
-                }
-
-            } else if (type == TokenType.MENTION) {
-                //CONVERT MENTION TO SUGGESTION
-                this.type = TokenType.SUGGESTION;
-                this.text = newValue;
-                this.endIndex = this.startIndex + this.text.length();
-                this.updateNext();
-                MentionTokenizer.this.currentSuggestion = this;
+            if (newString.equals("")) {
+                processText(newString);
+                Log.d("ERROR", "entered empty String");
+                return;
             }
+            String[] trialTokens = newString.split("(?=@)", 3);
+            String firstToken = trialTokens[0];
+            String secondToken = null;
+            if (firstToken.equals("")) {
+                firstToken = trialTokens[1];
+                if (trialTokens.length == 3) {
+                    secondToken = trialTokens[2];
+                }
+            } else {
+                if (trialTokens.length == 2) {
+                    secondToken = trialTokens[1];
+                } else if (trialTokens.length == 3) {
+                    secondToken = trialTokens[1] + trialTokens[2];
+                }
+            }
+
+            this.processText(firstToken);
+            if (secondToken != null && !secondToken.equals("")) {
+                //create new token of type suggestion
+                this.insert(new MentionToken(secondToken, this.endIndex));
+            }
+        }
+
+        private void processText(String text) {
+            if (text.contains("@")) {
+                if (this.type == TokenType.NORMAL) {
+                    this.convertToSuggestion();
+                } else if (this.type == TokenType.MENTION) {
+                    this.revertToSuggestion();
+                }
+            } else {
+                if (this.type != TokenType.NORMAL) {
+                    this.revertToNormal();
+                }
+            }
+            this.setText(text);
+        }
+
+        private void revertToNormal() {
+            this.type = TokenType.NORMAL;
+            if (MentionTokenizer.this.currentSuggestion == this) {
+                MentionTokenizer.this.currentSuggestion = null;
+            }
+        }
+
+        private void revertToSuggestion() {
+            this.type = TokenType.SUGGESTION;
+            this.suggestible = null;
+            MentionTokenizer.this.currentSuggestion = this;
+        }
+
+        private void convertToSuggestion() {
+            this.type = TokenType.SUGGESTION;
+            MentionTokenizer.this.currentSuggestion = this;
+        }
+
+        private void insert(MentionToken token) {
+            token.next = this.next;
+            this.next = token;
+            token.updateEndIndex();
         }
 
         public void convertToMention(MentionSuggestible suggestible) {
             this.type = TokenType.MENTION;
             this.suggestible = suggestible;
-            this.text = "@" + suggestible.getText();
+            this.setText("@" + suggestible.getText());
+            if (MentionTokenizer.this.currentSuggestion == this) {
+                MentionTokenizer.this.currentSuggestion = null;
+            }
+        }
+
+        private void updateEndIndex() {
             this.endIndex = this.startIndex + this.text.length();
             this.updateNext();
         }
+
+        private void setText(String text) {
+            this.text = text;
+            updateEndIndex();
+        }
     }
 
-    static interface ChangeHandler {
-        public void changed();
+
+    interface ChangeHandler {
+        void tokensChanged();
     }
 }

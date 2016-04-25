@@ -59,7 +59,7 @@ public class MentionAdaptor extends ArrayAdapter<MentionSuggestible> implements 
         return convertView;
     }
 
-     public interface MentionAdaptorDelegate{
+     public interface MentionAdaptorDelegate {
          void onSuggestionSelected(MentionSuggestible suggestible);
     }
 }
