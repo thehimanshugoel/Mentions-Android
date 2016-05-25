@@ -96,6 +96,16 @@ public class MentionTokenizerUnitTest {
             public String getText() {
                 return "sample suggestible";
             }
+
+            @Override
+            public String getImageUrl() {
+                return null;
+            }
+
+            @Override
+            public String getId() {
+                return null;
+            }
         };
         tokenizer.currentSuggestion.convertToMention(suggestible);
         assertNull(tokenizer.currentSuggestion);
@@ -115,6 +125,16 @@ public class MentionTokenizerUnitTest {
             @Override
             public String getText() {
                 return "sample suggestible";
+            }
+
+            @Override
+            public String getImageUrl() {
+                return null;
+            }
+
+            @Override
+            public String getId() {
+                return null;
             }
         };
         tokenizer.currentSuggestion.convertToMention(suggestible);
@@ -137,6 +157,16 @@ public class MentionTokenizerUnitTest {
             public String getText() {
                 return "sample suggestible";
             }
+
+            @Override
+            public String getImageUrl() {
+                return null;
+            }
+
+            @Override
+            public String getId() {
+                return null;
+            }
         };
         tokenizer.currentSuggestion.convertToMention(suggestible);
 
@@ -149,6 +179,16 @@ public class MentionTokenizerUnitTest {
             @Override
             public String getText() {
                 return "sample suggestible2";
+            }
+
+            @Override
+            public String getImageUrl() {
+                return null;
+            }
+
+            @Override
+            public String getId() {
+                return null;
             }
         };
         token2.convertToMention(suggestible2);

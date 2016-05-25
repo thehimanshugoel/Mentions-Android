@@ -7,6 +7,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.widget.EditText;
 import android.widget.ListView;
 
+import com.mentionsandroid.mention.MentionAdaptor;
 import com.mentionsandroid.mention.MentionController;
 import com.mentionsandroid.mention.MentionDelegate;
 import com.mentionsandroid.mention.MentionSuggestible;
@@ -22,8 +23,13 @@ public class MainActivity extends AppCompatActivity implements MentionDelegate {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mentionController = new MentionController(MainActivity.this, R.id.listView, R.id.edtText, android.R.id.text1, android.R.layout.simple_list_item_1);
+        mentionController = new MentionController(MainActivity.this, R.id.listView, R.id.edtText, R.id.txtUsername, R.id.imgProfile, R.layout.row_suggestion);
+
+        mentionController.getTokenizer().getCommentBody();
+        mentionController.getTokenizer().render();
     }
+
+
 
     @Override
     public Context getContext() {
