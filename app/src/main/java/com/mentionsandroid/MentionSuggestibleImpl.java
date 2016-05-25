@@ -16,4 +16,14 @@ public class MentionSuggestibleImpl implements MentionSuggestible {
     public String getText() {
         return "SuggestibleImpl" + this.id;
     }
+
+    @Override
+    public String getImageUrl() {
+        return "https://graph.facebook.com/10206968872152790/picture?height=100&width=100";
+    }
+
+    @Override
+    public String getId() {
+        return "";
+    }
 }

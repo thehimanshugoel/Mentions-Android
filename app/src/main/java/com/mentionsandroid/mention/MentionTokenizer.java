@@ -84,6 +84,16 @@ public class MentionTokenizer implements TextWatcher {
         return builder.toString();
     }
 
+    public String getCommentBody() {
+        MentionToken current = this.root;
+        StringBuilder builder = new StringBuilder();
+        while (current != null) {
+            builder.append(current.getSpan());
+            current = current.next;
+        }
+        return builder.toString();
+    }
+
     public void disable() {
         disabled = true;
     }
@@ -99,7 +109,7 @@ public class MentionTokenizer implements TextWatcher {
     }
 
     class MentionToken {
-         TokenType type = TokenType.NORMAL;
+        TokenType type = TokenType.NORMAL;
         public CharSequence text = "";
         public MentionToken next;
         private int startIndex;
@@ -109,6 +119,13 @@ public class MentionTokenizer implements TextWatcher {
         public MentionToken(CharSequence s, int startIndex) {
             this.startIndex = startIndex;
             this.updateText(s);
+        }
+
+        public String getSpan() {
+            if (type == TokenType.MENTION) {
+                return "@" + suggestible.getId();
+            }
+            return text.toString();
         }
 
         public void updateNext() {
@@ -137,22 +154,12 @@ public class MentionTokenizer implements TextWatcher {
                 Log.d("ERROR", "entered empty String");
                 return;
             }
-            String[] trialTokens = newString.split("(?=@)", 3);
+            String[] trialTokens = newString.split("(?=@)(?<=.)", 2);
             String firstToken = trialTokens[0];
             String secondToken = null;
-            if (firstToken.equals("")) {
-                firstToken = trialTokens[1];
-                if (trialTokens.length == 3) {
-                    secondToken = trialTokens[2];
-                }
-            } else {
-                if (trialTokens.length == 2) {
-                    secondToken = trialTokens[1];
-                } else if (trialTokens.length == 3) {
-                    secondToken = trialTokens[1] + trialTokens[2];
-                }
+            if (trialTokens.length == 2) {
+                secondToken = trialTokens[1];
             }
-
             this.processText(firstToken);
             if (secondToken != null && !secondToken.equals("")) {
                 //create new token of type suggestion
